@@ -75,21 +75,27 @@ mod tests {
     use std::alloc::{AllocError, Layout};
     use std::ptr::NonNull;
 
-    struct Alloc(Global);
+    struct Alloc {
+        inner: Global,
+        _mark: u64,
+    }
 
     impl Alloc {
         pub const fn new() -> Self {
-            Alloc(Global)
+            Alloc {
+                inner: Global,
+                _mark: u64::MAX,
+            }
         }
     }
 
     unsafe impl Allocator for Alloc {
         fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-            self.0.allocate(layout)
+            self.inner.allocate(layout)
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-            self.0.deallocate(ptr, layout)
+            self.inner.deallocate(ptr, layout)
         }
     }
 
