@@ -6,6 +6,12 @@ use std::collections::TryReserveError;
 pub trait VecAllocExt<T, A: Allocator>: Sized + Sealed {
     fn try_with_capacity_in(capacity: usize, alloc: A) -> Result<Self, TryReserveError>;
     fn try_push(&mut self, value: T) -> Result<(), TryReserveError>;
+    fn try_resize(&mut self, new_len: usize, value: T) -> Result<(), TryReserveError>
+    where
+        T: Copy;
+    fn try_extend_from_slice(&mut self, other: &[T]) -> Result<(), TryReserveError>
+    where
+        T: Copy;
 }
 
 /// Extension for `Vec<T>`
@@ -29,6 +35,27 @@ impl<T, A: Allocator> VecAllocExt<T, A> for Vec<T, A> {
             self.try_reserve(1)?;
         }
         self.push(value);
+        Ok(())
+    }
+
+    #[inline]
+    fn try_resize(&mut self, new_len: usize, value: T) -> Result<(), TryReserveError>
+    where
+        T: Copy,
+    {
+        if new_len > self.len() {
+            self.try_reserve(new_len - self.len())?;
+        }
+        self.resize(new_len, value);
+        Ok(())
+    }
+
+    fn try_extend_from_slice(&mut self, other: &[T]) -> Result<(), TryReserveError>
+    where
+        T: Copy,
+    {
+        self.try_reserve(other.len())?;
+        self.extend_from_slice(other);
         Ok(())
     }
 }
@@ -81,6 +108,20 @@ mod tests {
         v.try_push(1).unwrap();
         v.try_push(2).unwrap();
         v.try_push(3).unwrap();
+        assert_eq!(v, [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_vec_resize() {
+        let mut v = Vec::new_in(Alloc::new());
+        v.try_resize(3, 1).unwrap();
+        assert_eq!(v, [1, 1, 1]);
+    }
+
+    #[test]
+    fn test_vec_extend_from_slice() {
+        let mut v = Vec::new_in(Alloc::new());
+        v.try_extend_from_slice(&[1, 2, 3]).unwrap();
         assert_eq!(v, [1, 2, 3]);
     }
 }

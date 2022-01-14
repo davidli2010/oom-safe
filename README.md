@@ -13,7 +13,7 @@ Please read the [`API docs here`](https://docs.rs/oom-safe).
 
 ## Rust Version
 
-This version of `oom-safe` requires Rust 1.57 or later.
+This version of `oom-safe` requires Rust 1.57 nightly or later.
 
 ## License
 
