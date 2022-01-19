@@ -9,6 +9,9 @@ pub trait VecAllocExt<T, A: Allocator>: Sized + Sealed {
     fn try_resize(&mut self, new_len: usize, value: T) -> Result<(), TryReserveError>
     where
         T: Copy;
+    fn try_resize_with<F>(&mut self, new_len: usize, f: F) -> Result<(), TryReserveError>
+    where
+        F: FnMut() -> T;
     fn try_extend_from_slice(&mut self, other: &[T]) -> Result<(), TryReserveError>
     where
         T: Copy;
@@ -47,6 +50,18 @@ impl<T, A: Allocator> VecAllocExt<T, A> for Vec<T, A> {
             self.try_reserve(new_len - self.len())?;
         }
         self.resize(new_len, value);
+        Ok(())
+    }
+
+    #[inline]
+    fn try_resize_with<F>(&mut self, new_len: usize, f: F) -> Result<(), TryReserveError>
+    where
+        F: FnMut() -> T,
+    {
+        if new_len > self.len() {
+            self.try_reserve(new_len - self.len())?;
+        }
+        self.resize_with(new_len, f);
         Ok(())
     }
 
@@ -122,6 +137,18 @@ mod tests {
         let mut v = Vec::new_in(Alloc::new());
         v.try_resize(3, 1).unwrap();
         assert_eq!(v, [1, 1, 1]);
+    }
+
+    #[test]
+    fn test_vec_resize_with() {
+        let mut v = Vec::new_in(Alloc::new());
+        let mut i = 0;
+        v.try_resize_with(3, || {
+            i += 1;
+            i
+        })
+        .unwrap();
+        assert_eq!(v, [1, 2, 3]);
     }
 
     #[test]
