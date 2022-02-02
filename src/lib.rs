@@ -6,6 +6,6 @@ mod sealed {
     pub trait Sealed {}
 }
 
-mod vec;
+mod vec_ext;
 
-pub use self::vec::{VecAllocExt, VecExt};
+pub use self::vec_ext::{VecAllocExt, VecExt};
