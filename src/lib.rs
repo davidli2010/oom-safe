@@ -8,4 +8,9 @@ mod sealed {
 
 mod vec_ext;
 
-pub use self::vec_ext::{VecAllocExt, VecExt};
+pub use crate::vec_ext::{VecAllocExt, VecExt};
+
+pub mod alloc {
+    pub use std::alloc::{AllocError, Allocator, Global, Layout, LayoutError};
+    pub use std::collections::TryReserveError;
+}
