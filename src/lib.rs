@@ -8,6 +8,8 @@ mod sealed {
 
 mod vec_ext;
 
+pub mod vec;
+
 pub use crate::vec_ext::{VecAllocExt, VecExt};
 
 pub mod alloc {
