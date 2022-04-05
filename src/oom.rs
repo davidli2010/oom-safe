@@ -46,6 +46,15 @@ fn oom_hook(layout: Layout) {
     panic!("memory allocation of {} bytes failed", layout.size());
 }
 
+type PanicHook = Box<dyn Fn(&PanicInfo<'_>) + 'static + Sync + Send>;
+
+fn panic_hook(_: &PanicInfo<'_>) {
+    // panic abort except alloc error
+    if !ThreadAllocError::has_error() {
+        std::process::abort();
+    }
+}
+
 /// Invokes a closure, capturing the out-of-memory panic if one occurs.
 ///
 /// This function will return `Ok` with the closure's result if the closure
@@ -53,19 +62,10 @@ fn oom_hook(layout: Layout) {
 /// process will abort if other panics occur.
 #[inline]
 pub fn catch_oom<F: FnOnce() -> R + UnwindSafe, R>(f: F) -> Result<R, AllocError> {
-    type Hook = Box<dyn Fn(&PanicInfo<'_>) + 'static + Sync + Send>;
-
-    fn panic_hook(_: &PanicInfo<'_>) {
-        // panic abort except alloc error
-        if !ThreadAllocError::has_error() {
-            std::process::abort();
-        }
-    }
-
     static SET_HOOK: AtomicBool = AtomicBool::new(false);
     if !SET_HOOK.load(Ordering::Acquire) {
-        let hook: Hook =
-            Box::try_new(panic_hook).map_err(|_| AllocError::new(Layout::new::<Hook>()))?;
+        let hook: PanicHook =
+            Box::try_new(panic_hook).map_err(|_| AllocError::new(Layout::new::<PanicHook>()))?;
         std::panic::set_hook(hook);
         std::alloc::set_alloc_error_hook(oom_hook);
         SET_HOOK.store(true, Ordering::Release);
